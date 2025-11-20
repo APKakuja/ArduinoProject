@@ -1,0 +1,26 @@
+version: '3.1'
+services:
+  db:
+    image: postgres:latest
+    container_name: asistencia_db
+    environment:
+      - POSTGRES_DB=db_asistencia
+      - POSTGRES_PASSWORD=passadmin
+      - POSTGRES_USER=useradmin
+    ports:
+      - "5432:5432"
+    #volumes:
+      #- local_pgdata:/var/lib/postgresql/data
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pg_asistencia
+    ports:
+      - "80:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@adrian.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    #volumes:
+      #- pgadmin-data:/var/lib/pgadmin
+#volumes:
+  #local_pgdata:
+  #pgadmin-data:

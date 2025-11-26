@@ -34,7 +34,7 @@ def startup_event():
 # ENDPOINTS
 
 @app.post("/alumnos", response_model=Alumno)
-def crear_alumno(request: AlumnoRequest, db: Session = Depends(get_db())):
+def crear_alumno(request: AlumnoRequest, db: Session = Depends(get_db)):
     alumno = Alumno.model_validate(request)
     db.add(alumno)
     db.commit()

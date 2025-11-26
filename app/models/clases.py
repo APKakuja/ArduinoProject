@@ -35,36 +35,36 @@ class TrabajadorRequest(SQLModel):
     id_tarjeta: str
 
 class PersonalAux(SQLModel, table=True):
-    id_personal_aux: int = Field(foreign_key="Trabajador.id_trabajador")
+    id_personal_aux: int = Field(foreign_key="trabajador.id_trabajador", primary_key=True)
 
 class Profesor(SQLModel, table=True):
-    id_profesor: int = Field(foreign_key="Trabajador.id_trabajador")
+    id_profesor: int = Field(foreign_key="trabajador.id_trabajador", primary_key=True)
 
 class Clase(SQLModel, table=True):
     id_clase: str = Field(primary_key=True)
     nombre: str
     descripcion: str
-    id_profesor: str = Field(foreign_key="Profesor.id_profesor")
+    id_profesor: int = Field(foreign_key="profesor.id_profesor")
 
 class Asiste(SQLModel, table=True):
-    id_alumno: int = Field(foreign_key="Alumno.id_alumno", primary_key=True)
-    id_clase: str = Field(foreign_key="Clase.id_clase", primary_key=True)
+    id_alumno: int = Field(foreign_key="alumno.id_alumno", primary_key=True)
+    id_clase: str = Field(foreign_key="clase.id_clase", primary_key=True)
     fecha: date = Field(primary_key=True)
     hora: time = Field(primary_key=True)
     asiste: bool
 
 class Horario(SQLModel, table=True):
     id_horario: int = Field(default=None, primary_key=True)
-    fecha: date = Field(primary_key=True)
-    hora: time = Field(primary_key=True)
+    fecha: date
+    hora: time
     aula: str
-    id_clase: str = Field(foreign_key="Clase.id_clase")
+    id_clase: str = Field(foreign_key="clase.id_clase")
 
 class Jornada(SQLModel, table=True):
     id_jornada: int = Field(default=None, primary_key=True)
-    fecha: date = Field(primary_key=True)
-    hora: time = Field(primary_key=True)
-    id_trabajador: int = Field(foreign_key="Trabajador.id_trabajador")
+    fecha: date
+    hora: time
+    id_trabajador: int = Field(foreign_key="trabajador.id_trabajador")
 
 class RegistroJornada(SQLModel):
     fecha: date

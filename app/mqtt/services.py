@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, create_engine, Session, select
 from dotenv import load_dotenv
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 import paho.mqtt.client as mqtt
 import os
 
@@ -15,6 +15,7 @@ MQTT_PORT = int(os.getenv("MQTT_PORT"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC")
 MQTT_CLIENT_ID = os.getenv("MQTT_CLIENT_ID")
 '''
+
 # Conexion AWS
 # AWS IOT MQTT
 AWS_IOT_ENDPOINT = os.getenv("AWS_IOT_ENDPOINT")
@@ -42,6 +43,21 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(AWS_IOT_TOPIC)
     #client.subscribe(MQTT_TOPIC)
 
+
+def registro_reciente(db, modelo, campo_id, valor_id, minutos=60):
+    ultimo = db.exec(
+        select(modelo)
+        .where(campo_id == valor_id)
+        .order_by(modelo.fecha.desc(), modelo.hora.desc())
+    ).first()
+
+    if not ultimo:
+        return False
+
+    registro_dt = datetime.combine(ultimo.fecha, ultimo.hora)
+    return registro_dt >= datetime.now() - timedelta(minutes=minutos)
+
+
 def on_message(client, userdata, msg):
     print(f"Mensaje recibido en: {msg.topic}:{msg.payload}")
     try:
@@ -58,6 +74,41 @@ def on_message(client, userdata, msg):
     ss = fecha_completa.second
     hora_hh_mm_ss = time(hh,mm,ss)
 
+# Codigo antiguo sin respuesta para AWS
+    '''
+    with (Session(engine) as db):
+        query = select(Alumno).where(Alumno.id_tarjeta == id_tarjeta)
+        alumno_encontrado = db.exec(query).first()
+        if not (alumno_encontrado):
+            query_trabajador = select(Trabajador).where(Trabajador.id_tarjeta == id_tarjeta)
+            trabajador_encontrado = db.exec(query_trabajador).first()
+            if not (trabajador_encontrado):
+                return print(f"No hay assignacion para la tarjeta: {id_tarjeta}")
+            else:
+                registro_trabajador = RegistroJornada(
+                    fecha=fecha_dd_mm_aa,
+                    hora=hora_hh_mm_ss,
+                    id_trabajador=trabajador_encontrado.id_trabajador
+                )
+                registro_jornada = Jornada.model_validate(registro_trabajador)
+                db.add(registro_jornada)
+                db.commit()
+                return print(f"Ha venido a trabajar, registradoo: {id_tarjeta}")
+        else:
+            registro_alumno = Asiste(
+                id_alumno=alumno_encontrado.id_alumno,
+                id_clase="G5",
+                fecha=fecha_dd_mm_aa,
+                hora=hora_hh_mm_ss,
+                asiste=True
+            )
+            db.add(registro_alumno)
+            db.commit()
+            return print(f"Presencia de alumno a la clase registrada: {id_tarjeta}")
+'''
+
+    # Codigo nuevo con respuesta a AWS
+
     with (Session(engine) as db):
         query = select(Alumno).where(Alumno.id_tarjeta == id_tarjeta)
         alumno_encontrado = db.exec(query).first()
@@ -65,8 +116,15 @@ def on_message(client, userdata, msg):
             query_trabajador= select(Trabajador).where(Trabajador.id_tarjeta == id_tarjeta)
             trabajador_encontrado = db.exec(query_trabajador).first()
             if not(trabajador_encontrado):
-                return print(f"No hay assignacion para la tarjeta: {id_tarjeta}")
+                print(f"No hay assignacion para la tarjeta: {id_tarjeta}")
+                client.publish("iticbcn/espnode01/sub", "error")
+                return
             else:
+                if registro_reciente(db, Jornada, Jornada.id_trabajador, trabajador_encontrado.id_trabajador):
+                    print(f"Ya existe un registro reciente para trabajador {id_tarjeta}")
+                    client.publish("iticbcn/espnode01/sub", "duplicado")
+                    return
+
                 registro_trabajador=RegistroJornada(
                     fecha=fecha_dd_mm_aa,
                     hora=hora_hh_mm_ss,
@@ -75,8 +133,15 @@ def on_message(client, userdata, msg):
                 registro_jornada=Jornada.model_validate(registro_trabajador)
                 db.add(registro_jornada)
                 db.commit()
-                return print(f"Ha venido a trabajar, registradoo: {id_tarjeta}")
+                print(f"Ha venido a trabajar, registradoo: {id_tarjeta}")
+                client.publish("iticbcn/espnode01/sub", "OK")
+                return
         else:
+            if registro_reciente(db, Asiste, Asiste.id_alumno, alumno_encontrado.id_alumno):
+                print(f"Ya existe un registro reciente para alumno {id_tarjeta}")
+                client.publish("iticbcn/espnode01/sub", "duplicado")
+                return
+
             registro_alumno=Asiste(
                 id_alumno=alumno_encontrado.id_alumno,
                 id_clase="G5",
@@ -86,7 +151,9 @@ def on_message(client, userdata, msg):
             )
             db.add(registro_alumno)
             db.commit()
-            return print(f"Presencia de alumno a la clase registrada: {id_tarjeta}")
+            print(f"Presencia de alumno a la clase registrada: {id_tarjeta}")
+            client.publish("iticbcn/espnode01/sub", "OK")
+            return
 
 '''
 def start_mqtt():

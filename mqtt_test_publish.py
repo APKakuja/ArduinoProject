@@ -15,8 +15,9 @@ payload = 'agjhkjg'
 client.publish(MQTT_TOPIC, payload)
 print(f"Mensaje enviado: {payload}")
 '''
+tarjetas = ["73BAE212", "B30E361C", "A1B2C3D4", "E1B443U4", "Z1B2C3B0", "D4E5F6G7", "63D7CD11"]
 
-for i in range(5):
+for i in tarjetas:
     '''
     payload = {
         "id_usuario": f"user_{i}",
@@ -25,7 +26,7 @@ for i in range(5):
     }
     client.publish(MQTT_TOPIC, json.dumps(payload))
     '''
-    payload = f"id_usuario{i}"
+    payload = i
     client.publish(MQTT_TOPIC, payload)
     print(f"Mensaje enviado: {payload}")
     time.sleep(2)  # Espera entre mensajes
